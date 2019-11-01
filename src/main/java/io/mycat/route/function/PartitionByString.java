@@ -31,7 +31,7 @@ import io.mycat.util.StringUtil;
 /**
  * @author <a href="mailto:daasadmin@hp.com">yangwenx</a>
  */
-public final class PartitionByString extends AbstractPartitionAlgorithm implements RuleAlgorithm  {
+public  class PartitionByString extends AbstractPartitionAlgorithm implements RuleAlgorithm  {
   
     private int hashSliceStart = 0;
     /** 0 means str.length(), -1 means str.length()-1 */
