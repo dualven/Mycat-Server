@@ -62,7 +62,7 @@ public class PartitionByDateEx extends AbstractPartitionAlgorithm implements Rul
 			if(targetTime>endDate && nCount!=0){
 				targetPartition = targetPartition%nCount;
 			}
-			if(targetPartition > 365) {
+			if(targetPartition >= 365) {
 				targetPartition = targetPartition%365;
 			}
 			return targetPartition;
@@ -128,11 +128,11 @@ public class PartitionByDateEx extends AbstractPartitionAlgorithm implements Rul
 		PartitionByDateEx partitionByDate = new PartitionByDateEx();
 		
 		partitionByDate.setDateFormat("yyyy-MM-dd HH:mm:ss");
-		partitionByDate.setsBeginDate("2018-01-01 00:00:00");
-//		partitionByDate.setsEndDate("2018-12-31 23:59:59");
+		partitionByDate.setsBeginDate("2018-11-1 00:00:00");
+		partitionByDate.setsEndDate("2019-10-31 23:59:59");
 		partitionByDate.setsPartionDay("1");
 		partitionByDate.init();
-		int r = partitionByDate.calculate("2018-11-12 10:00:00");
+		int r = partitionByDate.calculate("2019-11-1 00:00:00");
 		System.out.println(r);
 	}
 
