@@ -52,6 +52,7 @@ import io.mycat.net.mysql.HandshakePacket;
 import io.mycat.net.mysql.HandshakeV10Packet;
 import io.mycat.net.mysql.MySQLPacket;
 import io.mycat.net.mysql.OkPacket;
+import io.mycat.server.parser.ServerParse;
 import io.mycat.util.CompressUtil;
 import io.mycat.util.RandomUtil;
 
@@ -238,7 +239,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 		long resId = this.responseSqlId.get();
 		if(this.executeSqlId > resId) {
 			boolean t = this.responseSqlId.compareAndSet(resId, this.executeSqlId); 
-			if(t && LOGGER.isDebugEnabled()) {
+			if(false) {
 				StackTraceElement stack[] = Thread.currentThread().getStackTrace();  
 				StringBuilder sb = new StringBuilder();
                 for(int i=0;i<stack.length;i++){
@@ -343,6 +344,10 @@ public abstract class FrontendConnection extends AbstractConnection {
 		// remove last ';'
 		if (sql.endsWith(";")) {
 			sql = sql.substring(0, sql.length() - 1);
+		}
+		// remove like '/* ApplicationName=DBeaver 6.0.1 - Main */' tool app hints
+		if(sql.indexOf("/* ApplicationName") >=0) {
+			sql = sql.replaceFirst("\\/\\*.*\\*\\/\\s*", "");
 		}
 		
 		// 记录SQL
@@ -454,6 +459,24 @@ public abstract class FrontendConnection extends AbstractConnection {
 			writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
 		}
 	}
+	/** 
+	 * 用来模拟mysql协议命令中的com_field_list，方便通过发sql测试 
+	 * https://dev.mysql.com/doc/internals/en/com-field-list.html
+	 */
+	public void fieldList(byte[] data) {
+		// 取得语句
+		String sql = null;		
+		try {
+			MySQLMessage mm = new MySQLMessage(data);
+			mm.position(5);
+			sql = mm.readString(charset);
+			sql = ServerParse.COM_FIELD_LIST_FLAG + sql;
+		} catch (UnsupportedEncodingException e) {
+			writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charset + "'");
+			return;
+		}		
+		this.query( sql );
+	}
 
 	public void ping() {
 		write(writeToBuffer(OkPacket.OK, allocate()));
@@ -464,7 +487,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 	}
 
 	public void kill(byte[] data) {
-		writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+		close("kill command");
 	}
 
 	public void unknown(byte[] data) {

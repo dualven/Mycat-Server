@@ -60,6 +60,8 @@ public final class ServerParse {
 	public static final int UNLOCK = 23;
     public static final int LOAD_DATA_INFILE_SQL = 99;
     public static final int DDL = 100;
+    public static final int COMMAND = 101;
+    public static final String COM_FIELD_LIST_FLAG="select @@command ";
 
 
 	public static final int MIGRATE  = 203;
@@ -696,7 +698,7 @@ public final class ServerParse {
 //  /*!mycat: sql=SELECT * FROM test where id=99 */set @pin=1;
 //                    call p_test(@pin,@pout);
 //                    select @pout;
-                    if(stmt.startsWith("/*!mycat:")||stmt.startsWith("/*#mycat:")||stmt.startsWith("/*mycat:"))
+                    if(stmt.startsWith("/*!mycat:")||stmt.startsWith("/*#mycat:")||stmt.startsWith("/*mycat:")||stmt.startsWith("/* mycat:"))
                     {
                         Matcher matcher = callPattern.matcher(stmt);
                         if (matcher.find()) {
@@ -720,6 +722,10 @@ public final class ServerParse {
 
 	// SELECT' '
 	static int selectCheck(String stmt, int offset) {
+		// SELECT @@command ,对应mysql协议是0x04
+		if(stmt.startsWith(COM_FIELD_LIST_FLAG)) {
+			return COMMAND;
+		}
 		if (stmt.length() > offset + 4) {
 			char c1 = stmt.charAt(++offset);
 			char c2 = stmt.charAt(++offset);

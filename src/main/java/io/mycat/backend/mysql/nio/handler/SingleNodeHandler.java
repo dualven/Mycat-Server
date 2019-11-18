@@ -71,19 +71,19 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable, LoadDat
 	
 	// only one thread access at one time no need lock
 	private volatile byte packetId;
-	private volatile ByteBuffer buffer;
+	protected volatile ByteBuffer buffer;
 	private volatile boolean isRunning;
 	private Runnable terminateCallBack;
-	private long startTime;
-	private long netInBytes;
-	private long netOutBytes;
+	protected long startTime;
+	protected long netInBytes;
+	protected long netOutBytes;
 	private long selectRows;
-	private long affectedRows;
+	protected long affectedRows;
 	protected final AtomicBoolean errorRepsponsed = new AtomicBoolean(false);
 	
 	private boolean prepared;
-	private int fieldCount;
-	private List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
+	protected int fieldCount;
+	protected List<FieldPacket> fieldPackets = new ArrayList<FieldPacket>();
 
     private volatile boolean isDefaultNodeShowTable;
     private volatile boolean isDefaultNodeShowFullTable;
@@ -123,7 +123,18 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable, LoadDat
 		}
         
 	}
-
+	public NonBlockingSession getSession() {
+		return this.session;
+	}
+	public RouteResultsetNode getRouteResultsetNode() {
+		return this.node;
+	}
+	public RouteResultset getRouteResultset(){
+		return this.rrs;
+	}
+	public ByteBuffer getBuffer() {
+		return this.buffer;
+	}
 	@Override
 	public void terminate(Runnable callback) {
 		boolean zeroReached = false;
@@ -139,7 +150,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable, LoadDat
 		}
 	}
 
-	private void endRunning() {
+	protected void endRunning() {
 		Runnable callback = null;
 		if (isRunning) {
 			isRunning = false;
@@ -223,7 +234,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable, LoadDat
 	private void executeException(BackendConnection c, Exception e) {
 		ErrorPacket err = new ErrorPacket();
 		err.packetId = ++packetId;
-		err.errno = ErrorCode.ERR_FOUND_EXCEPION;
+		err.errno = ErrorCode.ERR_FOUND_EXCEPTION;
 		err.message = StringUtil.encode(e.toString(), session.getSource().getCharset());
 
 		this.backConnectionErr(err, c);
@@ -293,7 +304,6 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable, LoadDat
 		if (errorRepsponsed.compareAndSet(false, true)) {
 			source.writeErrMessage(errPkg.errno, new String(errPkg.message));
 		}
-		
 		recycleResources();
 	}
 
@@ -346,7 +356,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable, LoadDat
 			// add by lian
 			// 解决sql统计中写操作永远为0
 			QueryResult queryResult = new QueryResult(session.getSource().getUser(), 
-					rrs.getSqlType(), rrs.getStatement(), affectedRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(),0);
+					rrs.getSqlType(), rrs.getStatement(), affectedRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(),0, source.getHost());
 			QueryResultDispatcher.dispatchQuery( queryResult );
 		}
 	}
@@ -389,7 +399,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable, LoadDat
 		//TODO: add by zhuam
 		//查询结果派发
 		QueryResult queryResult = new QueryResult(session.getSource().getUser(), 
-				rrs.getSqlType(), rrs.getStatement(), affectedRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(),resultSize);
+				rrs.getSqlType(), rrs.getStatement(), affectedRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(),resultSize, source.getHost());
 		QueryResultDispatcher.dispatchQuery( queryResult );
 		
 	}
@@ -399,7 +409,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable, LoadDat
 	 * 
 	 * @return
 	 */
-	private ByteBuffer allocBuffer() {
+	protected ByteBuffer allocBuffer() {
 		if (buffer == null) {
 			buffer = session.getSource().allocate();
 		}

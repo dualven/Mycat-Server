@@ -178,19 +178,23 @@ public class ServerConnection extends FrontendConnection {
 		if (db == null) {
 			db = SchemaUtil.detectDefaultDb(sql, type);
 			if (db == null) {
-				writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "No MyCAT Database selected");
-				return;
+				db = MycatServer.getInstance().getConfig().getUsers().get(user).getDefaultSchema();
+				if (db == null) {
+					writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,
+							"No MyCAT Database selected");
+					return ;
+				}
 			}
 			isDefault = false;
 		}
 		
 		// 兼容PhpAdmin's, 支持对MySQL元数据的模拟返回
 		//// TODO: 2016/5/20 支持更多information_schema特性
-		if (ServerParse.SELECT == type 
-				&& db.equalsIgnoreCase("information_schema") ) {
-			MysqlInformationSchemaHandler.handle(sql, this);
-			return;
-		}
+//		if (ServerParse.SELECT == type
+//				&& db.equalsIgnoreCase("information_schema") ) {
+//			MysqlInformationSchemaHandler.handle(sql, this);
+//			return;
+//		}
 
 		if (ServerParse.SELECT == type 
 				&& sql.contains("mysql") 
@@ -247,9 +251,16 @@ public class ServerConnection extends FrontendConnection {
 		// 检查当前使用的DB
 		String db = this.schema;
 		if (db == null) {
-			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,
-					"No MyCAT Database selected");
-			return null;
+			db = SchemaUtil.detectDefaultDb(sql, type);
+			if (db == null){
+				db = MycatServer.getInstance().getConfig().getUsers().get(user).getDefaultSchema();
+				if (db == null) {
+					writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,
+							"No MyCAT Database selected");
+					return null;
+				}
+			}
+
 		}
 		SchemaConfig schema = MycatServer.getInstance().getConfig()
 				.getSchemas().get(db);

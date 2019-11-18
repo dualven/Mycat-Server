@@ -1,6 +1,7 @@
 package io.mycat.route.parser.druid;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -9,14 +10,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.mycat.MycatServer;
+import io.mycat.config.MycatConfig;
 import io.mycat.config.model.SystemConfig;
 import io.mycat.route.SessionSQLPair;
-import io.mycat.route.sequence.handler.DistributedSequenceHandler;
-import io.mycat.route.sequence.handler.IncrSequenceMySQLHandler;
-import io.mycat.route.sequence.handler.IncrSequencePropHandler;
-import io.mycat.route.sequence.handler.IncrSequenceTimeHandler;
-import io.mycat.route.sequence.handler.IncrSequenceZKHandler;
-import io.mycat.route.sequence.handler.SequenceHandler;
+import io.mycat.route.sequence.handler.*;
 import io.mycat.util.TimeUtil;
 
 /**
@@ -27,7 +24,7 @@ import io.mycat.util.TimeUtil;
  */
 public class DruidSequenceHandler {
     private final SequenceHandler sequenceHandler;
-    
+
     /**
      * 分段锁
      */
@@ -38,9 +35,10 @@ public class DruidSequenceHandler {
      */
     private final static String MATCHED_FEATURE = "NEXT VALUE FOR MYCATSEQ_";
 
-    private final static Pattern pattern = Pattern.compile("(?:(\\s*next\\s+value\\s+for\\s*MYCATSEQ_(\\w+))(,|\\)|\\s)*)+", Pattern.CASE_INSENSITIVE);
+    private final  Pattern pattern;
 
-    public DruidSequenceHandler(int seqHandlerType) {
+    public DruidSequenceHandler(int seqHandlerType,String sequnceHandlerPattern) {
+      this.pattern =  Pattern.compile(sequnceHandlerPattern, Pattern.CASE_INSENSITIVE);
         switch (seqHandlerType) {
             case SystemConfig.SEQUENCEHANDLER_MYSQLDB:
                 sequenceHandler = IncrSequenceMySQLHandler.getInstance();
@@ -56,6 +54,17 @@ public class DruidSequenceHandler {
                 break;
             case SystemConfig.SEQUENCEHANDLER_ZK_GLOBAL_INCREMENT:
                 sequenceHandler = IncrSequenceZKHandler.getInstance();
+                break;
+            case SystemConfig.SEQUENCEHANDLER_DEF_GLOBAL_INCREMENT:
+                try {
+                    String sequenceHanlderClass = MycatServer.getInstance().getConfig().getSystem().getSequenceHanlderClass();
+                    Class<?> aClass = Class.forName(sequenceHanlderClass);
+                    Constructor constructor=aClass.getConstructor();
+                    sequenceHandler  =(SequenceHandler) constructor.newInstance();
+                }catch (Exception e){
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                }
                 break;
             default:
                 throw new java.lang.IllegalArgumentException("Invalid sequnce handler type " + seqHandlerType);
@@ -79,7 +88,7 @@ public class DruidSequenceHandler {
 				lock.lock();
 				try {
                 	matcher = pattern.matcher(executeSql);
-                	while(matcher.find()){            
+                	while(matcher.find()){
                 		long value = sequenceHandler.nextId(tableName.toUpperCase());
                         executeSql = executeSql.replaceFirst(matcher.group(1), " "+Long.toString(value));
                         pair.session.getSource().setLastWriteTime(TimeUtil.currentTimeMillis());
@@ -91,9 +100,9 @@ public class DruidSequenceHandler {
         }
         return executeSql;
     }
-    
+
     /*
-     * 获取分段锁 
+     * 获取分段锁
      * @param name
      * @return
      */
