@@ -572,7 +572,7 @@ public class RouterUtil {
 	}
 
 	public static void processSQL(ServerConnection sc,SchemaConfig schema,String sql,int sqlType){
-//		int sequenceHandlerType = MycatServer.getInstance().getConfig().getSystem().getSequnceHandlerType();
+//		int sequenceHandlerType = MycatServer.getInstance().getConfig().getSystem().getSequenceHandlerType();
 		final SessionSQLPair sessionSQLPair = new SessionSQLPair(sc.getSession2(), schema, sql, sqlType);
 //      modify by yanjunli  序列获取修改为多线程方式。使用分段锁方式,一个序列一把锁。  begin
 //		MycatServer.getInstance().getSequnceProcessor().addNewSql(sessionSQLPair);
@@ -1004,7 +1004,7 @@ public class RouterUtil {
 	 * @param tc
 	 * @return
 	 */
-	private static String getAliveRandomDataNode(TableConfig tc) {
+	public static String getAliveRandomDataNode(TableConfig tc) {
 		List<String> randomDns = (List<String>)tc.getDataNodes().clone();
 
 		MycatConfig mycatConfig = MycatServer.getInstance().getConfig();
@@ -1474,12 +1474,23 @@ public class RouterUtil {
 						if(pair.rangeValue != null) {
 							Integer[] tableIndexs = algorithm
 									.calculateRange(StringUtil.removeBackquote(pair.rangeValue.beginValue.toString()),StringUtil.removeBackquote(pair.rangeValue.endValue.toString()));
-							for(Integer idx : tableIndexs) {
-								String subTable = tableConfig.getDistTables().get(idx);
-								if(subTable != null) {
-									tablesRouteSet.add(subTable);
-									if(algorithm instanceof SlotFunction){
-										rrs.getDataNodeSlotMap().put(subTable,((SlotFunction) algorithm).slotValue());
+							if (tableIndexs.length == 0){
+								for(String subTable  : tableConfig.getDistTables()) {
+									if(subTable != null) {
+										tablesRouteSet.add(subTable);
+										if(algorithm instanceof SlotFunction){
+											rrs.getDataNodeSlotMap().put(subTable,((SlotFunction) algorithm).slotValue());
+										}
+									}
+								}
+							}else {
+								for(Integer idx : tableIndexs) {
+									String subTable = tableConfig.getDistTables().get(idx);
+									if(subTable != null) {
+										tablesRouteSet.add(subTable);
+										if(algorithm instanceof SlotFunction){
+											rrs.getDataNodeSlotMap().put(subTable,((SlotFunction) algorithm).slotValue());
+										}
 									}
 								}
 							}

@@ -23,6 +23,7 @@
  */
 package io.mycat.util;
 
+import io.mycat.MycatServer;
 import io.mycat.sqlengine.mpp.LoadData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -426,16 +427,15 @@ public class StringUtil {
 		return buf.toString();
 	}
 
-	public static String replaceChars(String str, char searchChar,
-			char replaceChar) {
-		if (str == null) {
-			return null;
-		}
-		return str.replace(searchChar, replaceChar);
-	}
-
 	public static String replaceChars(String str, String searchChars,
-			String replaceChars) {
+									  String replaceChars) {
+		return replaceChars(str,searchChars,replaceChars,false);
+	}
+	public static String replaceChars(String str, String searchChars,
+			String replaceChars,boolean force) {
+		if(!force){
+			return str;
+		}
 		if ((str == null) || (str.length() == 0) || (searchChars == null)
 				|| (searchChars.length() == 0)) {
 			return str;

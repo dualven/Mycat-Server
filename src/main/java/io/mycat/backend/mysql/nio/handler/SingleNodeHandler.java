@@ -176,7 +176,12 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable, LoadDat
 		startTime=System.currentTimeMillis();
 		ServerConnection sc = session.getSource();
 		this.isRunning = true;
-		this.packetId = 0;
+		if (rrs.isLoadData()) {
+			this.packetId = session.getSource().getLoadDataInfileHandler().getLastPackId();
+		} else {
+			this.packetId = 0;
+		}
+
 		final BackendConnection conn = session.getTarget(node);
 		LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlaveDebugInfo());
 		node.setRunOnSlave(rrs.getRunOnSlave());	// 实现 master/slave注解
@@ -235,8 +240,9 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable, LoadDat
 		ErrorPacket err = new ErrorPacket();
 		err.packetId = ++packetId;
 		err.errno = ErrorCode.ERR_FOUND_EXCEPTION;
-		err.message = StringUtil.encode(e.toString(), session.getSource().getCharset());
-
+		String message = e.toString();
+		LOGGER.error(message);
+		err.message = StringUtil.encode(message, session.getSource().getCharset());
 		this.backConnectionErr(err, c);
 	}
 
@@ -326,8 +332,8 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable, LoadDat
 			ok.read(data);
             boolean isCanClose2Client =(!rrs.isCallStatement()) ||(rrs.isCallStatement() &&!rrs.getProcedure().isResultSimpleValue());
 			if (rrs.isLoadData()) {				
-				byte lastPackId = source.getLoadDataInfileHandler().getLastPackId();
-				ok.packetId = ++lastPackId;// OK_PACKET
+				// byte lastPackId = source.getLoadDataInfileHandler().getLastPackId();
+				ok.packetId = ++packetId;// OK_PACKET
 				source.getLoadDataInfileHandler().clear();
 				
 			} else if (isCanClose2Client) {
@@ -542,6 +548,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable, LoadDat
 		ErrorPacket err = new ErrorPacket();
 		err.packetId = ++packetId;
 		err.errno = ErrorCode.ER_ERROR_ON_CLOSE;
+		LOGGER.error(reason);
 		err.message = StringUtil.encode(reason, session.getSource()
 				.getCharset());
 		this.backConnectionErr(err, conn);

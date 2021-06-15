@@ -11,11 +11,14 @@
 <mycat:server xmlns:mycat="http://io.mycat/">
 	<system>
 	<property name="nonePasswordLogin">0</property> <!-- 0为需要密码登陆、1为不需要密码登陆 ,默认为0，设置为1则需要指定默认账户-->
+	<property name="ignoreUnknownCommand">0</property><!-- 0遇上没有实现的报文(Unknown command:),就会报错、1为忽略该报文，返回ok报文。
+	在某些mysql客户端存在客户端已经登录的时候还会继续发送登录报文,mycat会报错,该设置可以绕过这个错误-->
 	<property name="useHandshakeV10">1</property>
+    <property name="removeGraveAccent">1</property>
 	<property name="useSqlStat">0</property>  <!-- 1为开启实时统计、0为关闭 -->
 	<property name="useGlobleTableCheck">0</property>  <!-- 1为开启全加班一致性检测、0为关闭 -->
 		<property name="sqlExecuteTimeout">300</property>  <!-- SQL 执行超时 单位:秒-->
-		<property name="sequnceHandlerType">1</property>
+		<property name="sequenceHandlerType">1</property>
 		<!--<property name="sequnceHandlerPattern">(?:(\s*next\s+value\s+for\s*MYCATSEQ_(\w+))(,|\)|\s)*)+</property>
 		INSERT INTO `travelrecord` (`id`,user_id) VALUES ('next value for MYCATSEQ_GLOBAL',"xxx");
 		-->
@@ -34,7 +37,7 @@
 		<property name="processorBufferPoolType">0</property>
 		<!--默认是65535 64K 用于sql解析时最大文本长度 -->
 		<!--<property name="maxStringLiteralLength">65535</property>-->
-		<!--<property name="sequnceHandlerType">0</property>-->
+		<!--<property name="sequenceHandlerType">0</property>-->
 		<!--<property name="backSocketNoDelay">1</property>-->
 		<!--<property name="frontSocketNoDelay">1</property>-->
 		<!--<property name="processorExecutor">16</property>-->
@@ -81,7 +84,8 @@
 		<property name="strictTxIsolation">false</property>
 		
 		<property name="useZKSwitch">true</property>
-		
+		<!--如果为0的话,涉及多个DataNode的catlet任务不会跨线程执行-->
+		<property name="parallExecute">0</property>
 	</system>
 	
 	<!-- 全局SQL防火墙设置 -->
