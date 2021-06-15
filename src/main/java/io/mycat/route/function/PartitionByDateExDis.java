@@ -154,7 +154,7 @@ public class PartitionByDateExDis extends AbstractPartitionAlgorithm implements 
 		System.out.println(r);
 		SimpleDateFormat format = new SimpleDateFormat(partitionByDate.dateFormat);
 		try {
-			Date ss = format.parse("2020-01-1 00:00:00");
+			Date ss = format.parse("2019-01-1 00:00:00");
 			
 			Calendar c = Calendar.getInstance();
 			c.setTime(ss);

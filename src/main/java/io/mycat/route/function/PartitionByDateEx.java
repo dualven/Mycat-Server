@@ -132,7 +132,7 @@ public class PartitionByDateEx extends AbstractPartitionAlgorithm implements Rul
 		partitionByDate.setsEndDate("2019-10-31 23:59:59");
 		partitionByDate.setsPartionDay("1");
 		partitionByDate.init();
-		int r = partitionByDate.calculate("2019-11-1 00:00:00");
+		int r = partitionByDate.calculate("2019-12-1 00:00:00");
 		System.out.println(r);
 	}
 
